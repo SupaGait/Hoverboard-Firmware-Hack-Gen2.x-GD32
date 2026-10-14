@@ -44,6 +44,18 @@ FlagStatus beepsBackwardsMaster = RESET;
 	extern FlagStatus beepsBackwards;
 	extern DataSlave oDataSlave;
 	extern uint8_t  wStateSlave;
+
+	#ifdef CARRIER
+		static volatile uint32_t iTimeLastSlaveRx = 0;
+		static volatile uint8_t bSlaveRxSeen = 0;
+
+		uint8_t CarrierSlaveFresh(void)
+		{
+			if (!bSlaveRxSeen)
+				return 0;
+			return (uint8_t)((millis() - iTimeLastSlaveRx) <= CARRIER_SLAVE_FRESH_MS);
+		}
+	#endif
 	
 	
 #else
@@ -133,6 +145,10 @@ void ProessReceived(SerialReceive* pData)
 	oDataSlave.currentDC = pData->currentDC;
 	oDataSlave.realSpeed = pData->realSpeed;
 	oDataSlave.iOdom 		= pData->iOdom;
+	#ifdef CARRIER
+		iTimeLastSlaveRx = millis();
+		bSlaveRxSeen = 1;
+	#endif
 
 	// Set functions according to the variables
 	//digitalWrite(UPPER_LED, upperLED);
@@ -145,6 +161,10 @@ void ProessReceived(SerialReceive* pData)
 #else
 
 	pwmSlave = CLAMP(pData->iPwmSlave,-1000,1000);
+	#ifdef CARRIER
+		/* The link carries the ±1000 wheel command. Speed mode wants revs/s*1024. */
+		pwmSlave = carrier_cmd_to_speed(pwmSlave);
+	#endif
 	wState = pData->wState;
 	
 	// Send answer

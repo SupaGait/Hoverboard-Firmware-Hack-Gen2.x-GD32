@@ -475,6 +475,11 @@
               <FilePath>.\Src\RemoteROS2.c</FilePath>
             </File>
             <File>
+              <FileName>remoteCarrier.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Src\remoteCarrier.c</FilePath>
+            </File>
+            <File>
               <FileName>i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Src\i2c.c</FilePath>
@@ -1266,6 +1271,11 @@
               <FileName>RemoteROS2.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Src\RemoteROS2.c</FilePath>
+            </File>
+            <File>
+              <FileName>remoteCarrier.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Src\remoteCarrier.c</FilePath>
             </File>
             <File>
               <FileName>i2c.c</FileName>
@@ -2061,6 +2071,11 @@
               <FilePath>.\Src\RemoteROS2.c</FilePath>
             </File>
             <File>
+              <FileName>remoteCarrier.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Src\remoteCarrier.c</FilePath>
+            </File>
+            <File>
               <FileName>i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Src\i2c.c</FilePath>
@@ -2852,6 +2867,11 @@
               <FileName>RemoteROS2.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Src\RemoteROS2.c</FilePath>
+            </File>
+            <File>
+              <FileName>remoteCarrier.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Src\remoteCarrier.c</FilePath>
             </File>
             <File>
               <FileName>i2c.c</FileName>

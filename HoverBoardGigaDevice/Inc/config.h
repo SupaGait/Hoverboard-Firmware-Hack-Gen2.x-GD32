@@ -36,27 +36,48 @@
 	#define BLDC_SINE			// silent sine-pwm motor control, added 2025 by Robo Durden. 
 	//#define BLDC_SINE_BOOSTER		// can boost speed by 15% starting from 87% throttle.
 	
-	#define DRIVING_MODE 0	//  0=pwm, 1=speed in revs/s*1024, 2=torque in NewtonMeter*1024, 3=iOdometer
+	// CarrierHasArrived board B. Comment this out to return to the stock single-board demo.
+	#define CARRIER
 
-	//#define SPEED_AsRevsPerSec		// Will overflow at 327 revs/s = 19620 rpm. Hoverboard motor: 14 rpm/V * 50V = 700 rpm
+	#ifdef CARRIER
+		// Speed mode: a 0 command holds 0 rpm. ±1000 from the ESP32 is ±1000 rpm.
+		#define DRIVING_MODE 1	//  0=pwm, 1=speed in revs/s*1024, 2=torque in NewtonMeter*1024, 3=iOdometer
+		#define SPEED_AsRevsPerSec
+		// No reverse beep: the base reverses often. No idle latch-off: it sits armed.
+	#else
+		#define DRIVING_MODE 0	//  0=pwm, 1=speed in revs/s*1024, 2=torque in NewtonMeter*1024, 3=iOdometer
+		//#define SPEED_AsRevsPerSec		// Will overflow at 327 revs/s = 19620 rpm. Hoverboard motor: 14 rpm/V * 50V = 700 rpm
+		#define BEEP_BACKWARDS
+	#endif
 
 	#define BAT_CELLS         	10        // battery number of cells. Normal Hoverboard battery: 10s
 	//#define BATTERY_LOW_SHUTOFF		// will shut off the board below BAT_LOW_DEAD = BAT_CELLS * CELL_LOW_DEAD, 
 	#define BATTERY_LOW_BEEP		// will start beeping for different battery low lwevels
 
-	#define BEEP_BACKWARDS
-
 	//#define DEBUG_LED		// uncomment to activate DEBUG_LedSet(bSet,iColor) macro. iCol: 0=green, 1=organge, 2=red
 
 
-	//#define MASTER		// uncomment for MASTER firmware.
-	//#define SLAVE			// uncomment for SLAVE firmware.
-	#define SINGLE			// uncomment if firmware is for single board and no master-slave dual board setup
+	// Carrier: default image is the master half (ESP32 UART + the other wheel).
+	// Slave image: `make carrier-slave` or `pio run -e carrier_slave_GD32F130`
+	// which adds -DCARRIER_SLAVE. Flash one of each.
+	#ifdef CARRIER_SLAVE
+		#define SLAVE
+	#elif defined(CARRIER)
+		#define MASTER
+	#else
+		//#define MASTER		// uncomment for MASTER firmware.
+		//#define SLAVE			// uncomment for SLAVE firmware.
+		#define SINGLE			// uncomment if firmware is for single board and no master-slave dual board setup
+	#endif
 
 	#if defined(MASTER) || defined(SINGLE)
 		
 		// choose only one 'remote' to control the motor
-		#define REMOTE_DUMMY
+		#ifdef CARRIER
+			#define REMOTE_CARRIER	// 8-byte / 18-byte VARIANT_USART frame, tank steering
+		#else
+			#define REMOTE_DUMMY
+		#endif
 				#ifdef REMOTE_DUMMY
 					#define REMOTE_PERIOD 6 // 3 = 3 seconds period of the zigzag curve
 					#define TEST_HALL2LED	// led the 3-led panel blink according to the hall sensors
@@ -110,10 +131,12 @@
 																		//	2 is usually PB10/PB11 on stm32f103 boards
 	#endif
 	
-	#if defined(REMOTE_UART) || defined(REMOTE_UARTBUS) || defined(REMOTE_CRSF) || defined(REMOTE_ROS2)
+	#if defined(REMOTE_UART) || defined(REMOTE_UARTBUS) || defined(REMOTE_CRSF) || defined(REMOTE_ROS2) || defined(REMOTE_CARRIER)
 		#define REMOTE_USART				0 	// 	1 is usually PA2/PA3 and the original master-slave 4pin header
 																		//	0 is usually PB6/PB7 and the empty header close to the flash-header
 																		//	2 is usually PB10/PB11 on stm32f103 boards
+																		// Carrier: ESP32 UART2 (GPIO15 TX, GPIO16 RX) lands on this header.
+																		// Leave USART1 on the 4-pin cable between the two halves.
 	#endif
 	
 	
@@ -122,7 +145,9 @@
 
 
 #ifdef MASTER_OR_SINGLE
-	#define INACTIVITY_TIMEOUT 	8        	// Minutes of not driving until poweroff (not very precise)
+	#ifndef CARRIER
+		#define INACTIVITY_TIMEOUT 	8        	// Minutes of not driving until poweroff (not very precise)
+	#endif
 
 	#define CELL_LOW_LVL1     3.5       // Gently beeps, show green battery symbol above this Level.
 	#define CELL_LOW_LVL2     3.3       // Battery almost empty, show orange battery symbol above this Level. Charge now! 
@@ -130,6 +155,6 @@
 #endif
 
 
-#define DC_CUR_LIMIT     		15        // Motor DC current limit in amps
+#define DC_CUR_LIMIT     		15        // Motor DC current limit in amps. Carrier: same class as the single board's I_MOT_MAX.
 
 #endif		// CONFIG_H

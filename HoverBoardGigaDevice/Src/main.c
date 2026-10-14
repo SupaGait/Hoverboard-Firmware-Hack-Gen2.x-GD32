@@ -352,6 +352,9 @@ int main (void)
 					wStateSlave |= STATE_Disable;
 
 				#ifdef MASTER
+					/* Halves face each other. Negating here is FOC pwmr = -cmdR
+					 * with INVERT_R_DIRECTION left unset, so a positive right
+					 * command rolls the slave hub platform-forward. */
 					SendSlave(-pwmSlave);
 				#endif
 

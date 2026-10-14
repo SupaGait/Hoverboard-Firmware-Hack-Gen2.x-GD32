@@ -16,7 +16,12 @@ else
 endif
 
 # Temporärer Ordner für die Objektdateien (.o)
-BUILD_DIR = build/$(TARGET)
+# carrier-slave passes CARRIER_SLAVE=1 so it does not reuse master objects.
+ifdef CARRIER_SLAVE
+  BUILD_DIR = build/carrier-slave
+else
+  BUILD_DIR = build/$(TARGET)
+endif
 
 # Keep debug information in the ELF by default so online-compiler builds can be
 # inspected with tools such as STMStudio. The generated .bin/.hex files are still
@@ -59,6 +64,10 @@ else ifeq ($(TARGET), GD32E230)
   C_DEFS += -DTARGET=3 -D__SYSTEM_CLOCK_72M_PLL_IRC8M_DIV2=72000000UL
   CFLAGS_EXTRA = 
   LDFLAGS_EXTRA = 
+endif
+
+ifdef CARRIER_SLAVE
+  C_DEFS += -DCARRIER_SLAVE
 endif
 
 ######################################
@@ -122,9 +131,23 @@ BIN = $(CP) -O binary -S
 ######################################
 
 # .PHONY sagt Make, dass das keine Dateien, sondern echte Befehle sind
-.PHONY: all clean patch_framework
+.PHONY: all clean patch_framework carrier-master carrier-slave test-carrier
 
 all: patch_framework $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+# CarrierHasArrived board B. These stay below `all` so a plain `make` still
+# builds the master image. The sub-make names `all` explicitly; otherwise
+# this target would become the default goal and recurse.
+carrier-master:
+	$(MAKE) IMAGE_NAME=carrier-master all
+
+carrier-slave:
+	$(MAKE) CARRIER_SLAVE=1 IMAGE_NAME=carrier-slave all
+
+test-carrier:
+	mkdir -p build
+	gcc -std=c11 -Wall -Wextra -Werror -I Inc tooling/test_carrier_protocol.c -o build/test_carrier_protocol
+	./build/test_carrier_protocol
 
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
@@ -145,16 +168,25 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile | $(BUILD_DIR)
 	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	@$(SZ) $@
 	@cp $@ build/$(TARGET).elf
+ifdef IMAGE_NAME
+	@cp $@ build/$(IMAGE_NAME).elf
+endif
 	@cp $(BUILD_DIR)/$(TARGET).map build/$(TARGET).map
 	@$(NM) -n $@ > build/$(TARGET).sym
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	@$(HEX) $< $@
 	@cp $@ build/$(TARGET).hex
+ifdef IMAGE_NAME
+	@cp $@ build/$(IMAGE_NAME).hex
+endif
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	@$(BIN) $< $@	
 	@cp $@ build/$(TARGET).bin
+ifdef IMAGE_NAME
+	@cp $@ build/$(IMAGE_NAME).bin
+endif
 	@echo "Success! Binaries copied to build/ directory"
 
 $(BUILD_DIR):
