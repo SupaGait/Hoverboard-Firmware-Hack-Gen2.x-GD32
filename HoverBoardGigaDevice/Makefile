@@ -84,6 +84,11 @@ C_INCLUDES = \
 -Ilib/framework/gd32/cmsis/variants/$(SPL_DIR) \
 -Ilib/framework/gd32/spl/variants/$(SPL_DIR)/inc
 
+# Same package as platformio.ini. Cloned on demand; gitignored.
+FRAMEWORK_DIR = lib/framework
+FRAMEWORK_REPO = https://github.com/hoverboardhavoc/gd32-pio-spl-package.git
+FRAMEWORK_BRANCH = hoverboardhavoc/add__PIO_DONT_SET_CLOCK_SOURCE__
+
 CONFIG_HEADERS = \
 $(wildcard Inc/*.h) \
 $(wildcard Inc/defines/*.h) \
@@ -131,7 +136,7 @@ BIN = $(CP) -O binary -S
 ######################################
 
 # .PHONY sagt Make, dass das keine Dateien, sondern echte Befehle sind
-.PHONY: all clean patch_framework carrier-master carrier-slave test-carrier
+.PHONY: all clean fetch_framework patch_framework carrier-master carrier-slave test-carrier
 
 all: patch_framework $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
 
@@ -152,7 +157,7 @@ test-carrier:
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
-$(BUILD_DIR)/%.o: %.c Makefile $(CONFIG_HEADERS) | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c Makefile $(CONFIG_HEADERS) | $(BUILD_DIR) patch_framework 
 	@echo "Compiling $< ..."
 	@$(CC) -c $(CFLAGS) -MMD -MP -MF $(BUILD_DIR)/$(notdir $(<:.c=.d)) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
@@ -193,8 +198,16 @@ $(BUILD_DIR):
 	mkdir -p $@		
 
 
+# Clone the GD32 SPL once. gd32f1x0.h is the header the firmware includes first.
+fetch_framework:
+	@if [ ! -f $(FRAMEWORK_DIR)/gd32/cmsis/variants/gd32f1x0/gd32f1x0.h ]; then \
+		echo "Fetching GD32 SPL framework..."; \
+		rm -rf $(FRAMEWORK_DIR); \
+		git clone --depth 1 --branch "$(FRAMEWORK_BRANCH)" "$(FRAMEWORK_REPO)" $(FRAMEWORK_DIR); \
+	fi
+
 # This patch runs always, but only applies '//' if missing
-patch_framework:
+patch_framework: fetch_framework
 	@echo "Patching framework clocks to use internal oscillator (IRC8M)..."
 	@# GD32F103 Patch
 	@if [ -f lib/framework/gd32/cmsis/variants/gd32f10x/system_gd32f10x.c ]; then \
