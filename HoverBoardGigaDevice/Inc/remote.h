@@ -20,6 +20,8 @@
 		#include "../Inc/remoteAdc.h"
 	#elif defined(REMOTE_ROS2)
 		#include "../Inc/RemoteROS2.h"
+	#elif defined(REMOTE_CARRIER)
+		#include "../Inc/remoteCarrier.h"
 	#elif defined(REMOTE_OPTIMIZEPID)
 		#define TEST_HALL2LED	// led the 3-led panel blink according to the hall sensors
 		#define RTT_REMOTE

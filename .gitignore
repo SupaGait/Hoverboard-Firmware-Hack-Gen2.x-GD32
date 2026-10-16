@@ -1,4 +1,6 @@
 HoverBoardGigaDevice/Objects/*
+HoverBoardGigaDevice/lib/framework/
+HoverBoardGigaDevice/build/*
 HoverBoardGigaDevice/BinariesToFlash/hoverboard*
 HoverBoardGigaDevice/BinariesToFlash/*.elf
 HoverBoardGigaDevice/codex_prompt.md

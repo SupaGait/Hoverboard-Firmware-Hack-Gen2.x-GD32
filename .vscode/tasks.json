@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "options": {
+    "env": {
+      "PATH": "C:\\Program Files (x86)\\Arm GNU Toolchain arm-none-eabi\\13.2 Rel1\\bin;C:\\msys64\\usr\\bin;C:\\msys64\\ucrt64\\bin;${env:USERPROFILE}\\.cargo\\bin;${env:PATH}"
+    }
+  },
+  "tasks": [
+    {
+      "label": "Build Master firmware",
+      "type": "shell",
+      "command": "make carrier-master",
+      "options": {
+        "cwd": "${workspaceRoot}/HoverBoardGigaDevice"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build Slave firmware",
+      "type": "shell",
+      "command": "make carrier-slave",
+      "options": {
+        "cwd": "${workspaceRoot}/HoverBoardGigaDevice"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Flash Master firmware",
+      "type": "shell",
+      "command": "${workspaceRoot}/HoverBoardGigaDevice/flashing/flash_master.bat",
+      "options": {
+        "cwd": "${workspaceRoot}/HoverBoardGigaDevice/build"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Flash Slave firmware",
+      "type": "shell",
+      "command": "${workspaceRoot}/HoverBoardGigaDevice/flashing/flash_slave.bat",
+      "options": {
+        "cwd": "${workspaceRoot}/HoverBoardGigaDevice/build"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

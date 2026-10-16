@@ -16,7 +16,12 @@ else
 endif
 
 # Temporärer Ordner für die Objektdateien (.o)
-BUILD_DIR = build/$(TARGET)
+# carrier-slave passes CARRIER_SLAVE=1 so it does not reuse master objects.
+ifdef CARRIER_SLAVE
+  BUILD_DIR = build/carrier-slave
+else
+  BUILD_DIR = build/$(TARGET)
+endif
 
 # Keep debug information in the ELF by default so online-compiler builds can be
 # inspected with tools such as STMStudio. The generated .bin/.hex files are still
@@ -61,6 +66,10 @@ else ifeq ($(TARGET), GD32E230)
   LDFLAGS_EXTRA = 
 endif
 
+ifdef CARRIER_SLAVE
+  C_DEFS += -DCARRIER_SLAVE
+endif
+
 ######################################
 # C-Sources and Includes
 ######################################
@@ -74,6 +83,11 @@ C_INCLUDES = \
 -Ilib/framework/gd32/cmsis/cores/gd32 \
 -Ilib/framework/gd32/cmsis/variants/$(SPL_DIR) \
 -Ilib/framework/gd32/spl/variants/$(SPL_DIR)/inc
+
+# Same package as platformio.ini. Cloned on demand; gitignored.
+FRAMEWORK_DIR = lib/framework
+FRAMEWORK_REPO = https://github.com/hoverboardhavoc/gd32-pio-spl-package.git
+FRAMEWORK_BRANCH = hoverboardhavoc/add__PIO_DONT_SET_CLOCK_SOURCE__
 
 CONFIG_HEADERS = \
 $(wildcard Inc/*.h) \
@@ -122,14 +136,28 @@ BIN = $(CP) -O binary -S
 ######################################
 
 # .PHONY sagt Make, dass das keine Dateien, sondern echte Befehle sind
-.PHONY: all clean patch_framework
+.PHONY: all clean fetch_framework patch_framework carrier-master carrier-slave test-carrier
 
 all: patch_framework $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+# CarrierHasArrived board B. These stay below `all` so a plain `make` still
+# builds the master image. The sub-make names `all` explicitly; otherwise
+# this target would become the default goal and recurse.
+carrier-master:
+	$(MAKE) IMAGE_NAME=carrier-master all
+
+carrier-slave:
+	$(MAKE) CARRIER_SLAVE=1 IMAGE_NAME=carrier-slave all
+
+test-carrier:
+	mkdir -p build
+	gcc -std=c11 -Wall -Wextra -Werror -I Inc tooling/test_carrier_protocol.c -o build/test_carrier_protocol
+	./build/test_carrier_protocol
 
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
-$(BUILD_DIR)/%.o: %.c Makefile $(CONFIG_HEADERS) | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c Makefile $(CONFIG_HEADERS) | $(BUILD_DIR) patch_framework 
 	@echo "Compiling $< ..."
 	@$(CC) -c $(CFLAGS) -MMD -MP -MF $(BUILD_DIR)/$(notdir $(<:.c=.d)) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
@@ -145,24 +173,41 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile | $(BUILD_DIR)
 	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	@$(SZ) $@
 	@cp $@ build/$(TARGET).elf
+ifdef IMAGE_NAME
+	@cp $@ build/$(IMAGE_NAME).elf
+endif
 	@cp $(BUILD_DIR)/$(TARGET).map build/$(TARGET).map
 	@$(NM) -n $@ > build/$(TARGET).sym
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	@$(HEX) $< $@
 	@cp $@ build/$(TARGET).hex
+ifdef IMAGE_NAME
+	@cp $@ build/$(IMAGE_NAME).hex
+endif
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	@$(BIN) $< $@	
 	@cp $@ build/$(TARGET).bin
+ifdef IMAGE_NAME
+	@cp $@ build/$(IMAGE_NAME).bin
+endif
 	@echo "Success! Binaries copied to build/ directory"
 
 $(BUILD_DIR):
 	mkdir -p $@		
 
 
+# Clone the GD32 SPL once. gd32f1x0.h is the header the firmware includes first.
+fetch_framework:
+	@if [ ! -f $(FRAMEWORK_DIR)/gd32/cmsis/variants/gd32f1x0/gd32f1x0.h ]; then \
+		echo "Fetching GD32 SPL framework..."; \
+		rm -rf $(FRAMEWORK_DIR); \
+		git clone --depth 1 --branch "$(FRAMEWORK_BRANCH)" "$(FRAMEWORK_REPO)" $(FRAMEWORK_DIR); \
+	fi
+
 # This patch runs always, but only applies '//' if missing
-patch_framework:
+patch_framework: fetch_framework
 	@echo "Patching framework clocks to use internal oscillator (IRC8M)..."
 	@# GD32F103 Patch
 	@if [ -f lib/framework/gd32/cmsis/variants/gd32f10x/system_gd32f10x.c ]; then \

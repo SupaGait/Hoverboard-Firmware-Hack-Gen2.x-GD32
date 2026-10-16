@@ -45,6 +45,11 @@ void UpdateUSARTMasterSlaveInput(void);
 // Send slave frame via USART
 //----------------------------------------------------------------------------
 void SendSlave(int16_t pwmSlave);
+
+#if defined(CARRIER)
+/* 1 once a slave frame arrived within CARRIER_SLAVE_FRESH_MS. */
+uint8_t CarrierSlaveFresh(void);
+#endif
 #endif
 
 #ifdef SLAVE

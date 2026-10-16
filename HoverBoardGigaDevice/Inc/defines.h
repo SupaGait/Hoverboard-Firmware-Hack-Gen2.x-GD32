@@ -150,7 +150,7 @@
 	#error "MASTER or SLAVE set in config.h but no but no uart available. Please choose SINGLE (and REMOTE_UARTBUS)"
 #endif
 
-#if (defined(REMOTE_UART) || defined(REMOTE_UARTBUS) || defined(REMOTE_CRSF) || defined(REMOTE_ROS2)) && !defined(REMOTE_USART)
+#if (defined(REMOTE_UART) || defined(REMOTE_UARTBUS) || defined(REMOTE_CRSF) || defined(REMOTE_ROS2) || defined(REMOTE_CARRIER)) && !defined(REMOTE_USART)
 	#error "a usart remote selected in config.h but neither USART0_REMOTE nor USART1_REMOTE in your defines_2-?.h"
 #endif
 
@@ -239,7 +239,20 @@
 
 	
 #define DELAY_IN_MAIN_LOOP 	5         // Delay in ms
-#define TIMEOUT_MS          2000      // Time in milliseconds without steering commands before pwm emergency off
+
+#ifdef CARRIER
+	#include "../Inc/carrierProtocol.h"
+	#if DRIVING_MODE != 1
+		#error "Carrier board B requires DRIVING_MODE 1 (speed, so 0 holds 0 rpm)"
+	#endif
+	#ifndef SPEED_AsRevsPerSec
+		#error "Carrier board B requires SPEED_AsRevsPerSec"
+	#endif
+	/* Same window as the ESP32 silence release: both halves drop PWM. */
+	#define TIMEOUT_MS CARRIER_LINK_TIMEOUT_MS
+#else
+	#define TIMEOUT_MS          2000      // Time in milliseconds without steering commands before pwm emergency off
+#endif
 
 #define DEAD_TIME        		60        // PWM deadtime (60 = 1?s, measured by oscilloscope)
 #define PWM_FREQ         		16000     // PWM frequency in Hz
