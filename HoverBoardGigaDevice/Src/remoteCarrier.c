@@ -3,6 +3,7 @@
 #include "../Inc/comms.h"
 #include "../Inc/commsMasterSlave.h"
 #include "../Inc/bldc.h"
+#include "../Inc/iap_protocol.h"
 #include <string.h>
 
 #ifdef REMOTE_CARRIER
@@ -102,6 +103,47 @@ void RemoteUpdate(void)
 void RemoteCallback(void)
 {
 	uint8_t cRead = USART_REMOTE_BUFFER[0];
+	static uint8_t iap_sync;
+	static uint16_t iap_n;
+	static uint8_t iap_buf[IAP_MAX_FRAME];
+	static uint8_t iap_prev;
+
+	/* Watch for IAP HELLO (0xABCE) in parallel with motor frames (0xABCD). */
+	if (!iap_sync) {
+		uint16_t start = ((uint16_t)cRead << 8) | iap_prev;
+		iap_prev = cRead;
+		if (start == IAP_START_FRAME) {
+			iap_buf[0] = (uint8_t)(IAP_START_FRAME & 0xFF);
+			iap_buf[1] = (uint8_t)(IAP_START_FRAME >> 8);
+			iap_n = 2;
+			iap_sync = 1;
+		}
+	} else {
+		if (iap_n < IAP_MAX_FRAME)
+			iap_buf[iap_n++] = cRead;
+		iap_prev = cRead;
+		if (iap_n >= IAP_HEADER_LEN) {
+			uint16_t plen = (uint16_t)iap_buf[4] | ((uint16_t)iap_buf[5] << 8);
+			if (plen > IAP_MAX_PAYLOAD) {
+				iap_sync = 0;
+				iap_n = 0;
+			} else {
+				uint16_t total = (uint16_t)(IAP_HEADER_LEN + plen + IAP_CRC_LEN);
+				if (iap_n >= total) {
+					uint32_t got = (uint32_t)iap_buf[total - 4]
+						| ((uint32_t)iap_buf[total - 3] << 8)
+						| ((uint32_t)iap_buf[total - 2] << 16)
+						| ((uint32_t)iap_buf[total - 1] << 24);
+					if (got == iap_crc32(iap_buf, IAP_HEADER_LEN + plen)
+						&& iap_buf[2] == IAP_MSG_HELLO) {
+						iap_enter_from_app();
+					}
+					iap_sync = 0;
+					iap_n = 0;
+				}
+			}
+		}
+	}
 
 	if (iReceivePos < 0)
 	{

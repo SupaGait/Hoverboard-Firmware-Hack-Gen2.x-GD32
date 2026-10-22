@@ -26,7 +26,11 @@ cd HoverBoardGigaDevice
 make test-carrier
 make carrier-master    # build/carrier-master.bin  → half wired to the ESP32
 make carrier-slave     # build/carrier-slave.bin   → the other half
+make -C Bootloader            # master BL (USART0 + slave relay)
+make -C Bootloader SLAVE=1    # slave BL (USART1 host)
 ```
+
+Apps link at `0x08001000` after a 4 KiB UART IAP bootloader. Flash each half once with its bootloader at `0x08000000`, then the matching app at `0x08001000`. Later updates use Carrier SoftAP: `target=B` for the master, `target=B-slave` for the slave (master bootloader relays). Protocol: CarrierHasArrived `docs/BOARD_IAP.md`.
 
 PlatformIO, same split:
 

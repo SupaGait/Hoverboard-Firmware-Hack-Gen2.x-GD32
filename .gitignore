@@ -10,3 +10,4 @@ HoverBoardGigaDevice/Hoverboard.uvoptx
 HoverBoardGigaDevice/.vscode*
 clearGitIgnore.bat
 .editorconfig
+HoverBoardGigaDevice/Bootloader/build/

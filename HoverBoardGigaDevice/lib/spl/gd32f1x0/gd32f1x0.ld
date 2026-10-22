@@ -1,7 +1,8 @@
 MEMORY
 {
     RAM (xrw)   : ORIGIN = 0x20000000, LENGTH = 8K
-    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 64K
+    /* After 4 KiB UART IAP bootloader; last 1 KiB page stays ConfigData. */
+    FLASH (rx)  : ORIGIN = 0x08001000, LENGTH = 59K
 }
 
 /* Entry Point */
