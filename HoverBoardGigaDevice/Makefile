@@ -138,16 +138,25 @@ BIN = $(CP) -O binary -S
 # .PHONY sagt Make, dass das keine Dateien, sondern echte Befehle sind
 .PHONY: all clean fetch_framework patch_framework carrier-master carrier-slave test-carrier
 
+# C_SOURCES uses $(wildcard ...) on lib/framework at parse time. On a clean
+# tree that directory is missing, so fetch first and re-invoke make (FETCHED=1)
+# so the wildcards pick up the SPL sources.
+ifeq ($(FETCHED),)
+all: fetch_framework
+	$(MAKE) FETCHED=1 all
+else
 all: patch_framework $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+endif
 
 # CarrierHasArrived board B. These stay below `all` so a plain `make` still
 # builds the master image. The sub-make names `all` explicitly; otherwise
 # this target would become the default goal and recurse.
-carrier-master:
-	$(MAKE) IMAGE_NAME=carrier-master all
+# Prerequisite fetch + FETCHED=1 so the recursive make sees SPL sources.
+carrier-master: fetch_framework
+	$(MAKE) IMAGE_NAME=carrier-master FETCHED=1 all
 
-carrier-slave:
-	$(MAKE) CARRIER_SLAVE=1 IMAGE_NAME=carrier-slave all
+carrier-slave: fetch_framework
+	$(MAKE) CARRIER_SLAVE=1 IMAGE_NAME=carrier-slave FETCHED=1 all
 
 test-carrier:
 	mkdir -p build
