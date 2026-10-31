@@ -217,6 +217,7 @@ patch_framework: fetch_framework
 	@# GD32F130 Patch
 	@if [ -f lib/framework/gd32/cmsis/variants/gd32f1x0/system_gd32f1x0.c ]; then \
 		sed -i 's/^[ \t]*#define __SYSTEM_CLOCK_72M_PLL_HXTAL/\/\/#define __SYSTEM_CLOCK_72M_PLL_HXTAL/g' lib/framework/gd32/cmsis/variants/gd32f1x0/system_gd32f1x0.c; \
+		sed -i 's/#define VECT_TAB_OFFSET  (uint32_t)0x00/#define VECT_TAB_OFFSET  (uint32_t)0x1000/' lib/framework/gd32/cmsis/variants/gd32f1x0/system_gd32f1x0.c; \
 	fi
 	@# GD32E230 Patch
 	@if [ -f lib/framework/gd32/cmsis/variants/gd32e23x/system_gd32e23x.c ]; then \
