@@ -1,0 +1,60 @@
+name: Carrier board-B firmware
+
+# SoftAP / UART IAP images for split board B (see docs/CARRIER_BOARD_B.md, PR #2).
+# - carrier-master.bin / carrier-slave.bin: app payloads (0x08001000) for SoftAP
+#   target=B and target=B-slave
+# - bootloader-master.bin / bootloader-slave.bin: 4 KiB IAP BLs for first ST-Link
+#   install at 0x08000000
+
+on:
+  push:
+    branches: [CarrierHasArrived_split_board]
+  pull_request:
+
+jobs:
+  build-carrier:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: HoverBoardGigaDevice
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM GCC toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-arm-none-eabi \
+            binutils-arm-none-eabi \
+            libnewlib-arm-none-eabi \
+            make
+
+      - name: Host protocol unit test
+        run: make test-carrier
+
+      - name: Build SoftAP OTA apps (master / slave)
+        run: |
+          make carrier-master
+          make carrier-slave
+
+      - name: Build UART IAP bootloaders (master / slave)
+        run: |
+          make -C Bootloader
+          make -C Bootloader SLAVE=1
+
+      - name: Stage artifact names
+        run: |
+          mkdir -p artifacts
+          cp -v build/carrier-master.bin build/carrier-slave.bin artifacts/
+          cp -v build/carrier-master.hex build/carrier-slave.hex artifacts/
+          cp -v Bootloader/build/master/bootloader-master.bin artifacts/
+          cp -v Bootloader/build/slave/bootloader-slave.bin artifacts/
+
+      - name: Upload SoftAP OTA and flashable Carrier artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: carrier-board-b-firmware
+          path: HoverBoardGigaDevice/artifacts/*
+          if-no-files-found: error
+          retention-days: 14
