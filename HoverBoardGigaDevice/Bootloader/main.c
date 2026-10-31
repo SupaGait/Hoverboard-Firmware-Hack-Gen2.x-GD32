@@ -498,14 +498,27 @@ __attribute__((section(".iap_entry"), used, noinline)) void iap_run(void)
 
 int main(void)
 {
-  usart_init(HOST_USART);
   g_state = ST_IDLE;
   g_sync = 0;
   g_rx_n = 0;
+
+#ifdef IAP_USE_USART1
+  /* Slave host UART is the live master↔slave link. Do not listen on cold
+   * boot: the master app starts talking as soon as it comes up, which can
+   * leave this BL stuck in IAP (no SELF_HOLD, wheel freewheels). SoftAP
+   * updates enter via iap_run() after the app sees a relayed HELLO. */
+  if (app_valid()) {
+    jump_to_app();
+  }
+  usart_init(HOST_USART);
+#else
+  usart_init(HOST_USART);
+  /* Brief listen window, then boot app if valid. */
   for (uint32_t i = 0; i < 300000u; i++) {
     uint8_t c;
     if (host_getc(&c)) {
       feed_byte(c);
+      /* Stay in IAP once HELLO moved state. */
       if (g_state != ST_IDLE) {
         break;
       }
@@ -514,6 +527,8 @@ int main(void)
   if (g_state == ST_IDLE && app_valid()) {
     jump_to_app();
   }
+#endif
+
   g_state = ST_READY;
   for (;;) {
     uint8_t c;
