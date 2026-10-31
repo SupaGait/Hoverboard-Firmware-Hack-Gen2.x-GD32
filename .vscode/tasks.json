@@ -31,8 +31,39 @@
         "cwd": "${workspaceRoot}/HoverBoardGigaDevice"
       },
       "group": {
-        "kind": "build",
-        "isDefault": true
+        "kind": "build"
+      },
+      "problemMatcher": ["$gcc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build Master bootloader",
+      "type": "shell",
+      "command": "make",
+      "options": {
+        "cwd": "${workspaceRoot}/HoverBoardGigaDevice/Bootloader"
+      },
+      "group": {
+        "kind": "build"
+      },
+      "problemMatcher": ["$gcc"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build Slave bootloader",
+      "type": "shell",
+      "command": "make SLAVE=1",
+      "options": {
+        "cwd": "${workspaceRoot}/HoverBoardGigaDevice/Bootloader"
+      },
+      "group": {
+        "kind": "build"
       },
       "problemMatcher": ["$gcc"],
       "presentation": {
