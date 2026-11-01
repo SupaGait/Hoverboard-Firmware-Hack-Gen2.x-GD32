@@ -41,4 +41,4 @@ pio run -e carrier_slave_GD32F130     # slave
 
 Wiring to the ESP32-S3, 3.3 V, shared ground. Do not connect a sensor-cable 15 V wire. ESP32 GPIO15 (TX) goes to the master RX, GPIO16 (RX) to the master TX. Measure the idle level on PB6/PB7 and level-shift if that header sits at 5 V.
 
-Current limit is 15 A, the same class as the single board. 10S pack. The reverse beep is off, and the board does not latch itself off after sitting still.
+Current limit is **8 A** DC chop (`DC_CUR_LIMIT`, Carrier-only; stock non-Carrier remains 15 A). Lower than board A’s `I_MOT_MAX` (15 A) so a speed-mode stall is less likely to disrupt the half-board USART and drop the SoftAP link. 10S pack. The reverse beep is off, and the board does not latch itself off after sitting still.

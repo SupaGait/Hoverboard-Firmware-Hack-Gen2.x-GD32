@@ -155,6 +155,15 @@
 #endif
 
 
-#define DC_CUR_LIMIT     		15        // Motor DC current limit in amps. Carrier: same class as the single board's I_MOT_MAX.
+// Motor DC current limit in amps (BLDC ISR PWM chop in bldc.c).
+// Carrier board B: lower than FOC I_MOT_MAX (15 A) so a speed-mode stall does not
+// hold ~15 A chop long enough to disrupt the master↔slave USART (EMI / bus sag),
+// which otherwise expires CarrierSlaveFresh and silences ESP feedback → SoftAP B-down.
+// Non-Carrier builds keep the stock 15 A.
+#ifdef CARRIER
+	#define DC_CUR_LIMIT     		8
+#else
+	#define DC_CUR_LIMIT     		15
+#endif
 
 #endif		// CONFIG_H
